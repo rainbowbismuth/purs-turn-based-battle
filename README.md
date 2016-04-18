@@ -1,10 +1,10 @@
-# elm-turn-based-battle
+# purs-turn-based-battle
 Just messing around (:
 
 ## Compile & Run
 
 ```
-elm-live src/Main.elm --output=web/assets/js/elm.js --open
+pulp --watch browserify --optimise --to out.js
 ```
 
 and also in the /web/assets/ directory
