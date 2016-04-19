@@ -174,7 +174,6 @@ playAI sim =
       availableMoves sim
         # Array.mapMaybe explore
         # Array.sortBy (\x y -> -(x.score) `compare` -(y.score))
-        # Debug.log "AI move Array"
         # Array.head
   in
     case head of
