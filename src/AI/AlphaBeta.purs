@@ -30,6 +30,7 @@ import Player (Player(..))
 import Command (Command(..), CommandType(..))
 import Move (Move)
 import Elm.Debug as Debug
+import Data.Function (mkFn4, mkFn6, Fn4, runFn4, runFn6, Fn6)
 
 
 scoreCombatant :: Combatant -> Number
@@ -85,34 +86,34 @@ inf =
 
 evaluatePosition :: Simulation -> Int -> Number
 evaluatePosition sim depth =
-  alphabeta sim depth (-inf) inf
+  runFn4 alphabeta sim depth (-inf) inf
 
 
-alphabeta :: Simulation -> Int -> Number -> Number -> Number
-alphabeta sim depth a b =
+alphabeta :: Fn4 Simulation Int Number Number Number
+alphabeta = mkFn4 $ \sim depth a b ->
   if depth == 0 || Simulation.gameOver sim then
     score sim
   else
     case Simulation.whosTurn sim of
       Just AI ->
-        alphabetaMaximizing (availableMoves sim) sim depth a b (-inf)
+        runFn6 alphabetaMaximizing (availableMoves sim) sim depth a b (-inf)
 
       Just User ->
-        alphabetaMinimizing (availableMoves sim) sim depth a b (inf)
+        runFn6 alphabetaMinimizing (availableMoves sim) sim depth a b (inf)
 
       Nothing ->
-        alphabeta (Simulation.clockTick sim) depth a b
+        runFn4 alphabeta (Simulation.clockTick sim) depth a b
 
 
-alphabetaMaximizing :: Array Command -> Simulation -> Int -> Number -> Number -> Number -> Number
-alphabetaMaximizing moves sim depth a b v =
+alphabetaMaximizing :: Fn6 (Array Command) Simulation Int Number Number Number Number
+alphabetaMaximizing = mkFn6 $ \moves sim depth a b v ->
   case Array.uncons moves of
     Just {head = m, tail = ms} ->
       case Simulation.simulate m sim of
         Just nextSim ->
           let
             nextV =
-              max v (alphabeta nextSim (depth - 1) a b)
+              max v (runFn4 alphabeta nextSim (depth - 1) a b)
 
             nextA =
               max a nextV
@@ -120,24 +121,24 @@ alphabetaMaximizing moves sim depth a b v =
             if b < nextA then
               nextV
             else
-              alphabetaMaximizing ms sim depth nextA b nextV
+              runFn6 alphabetaMaximizing ms sim depth nextA b nextV
 
         Nothing ->
-          alphabetaMaximizing ms sim depth a b v
+          runFn6 alphabetaMaximizing ms sim depth a b v
 
     Nothing ->
       v
 
 
-alphabetaMinimizing :: Array Command -> Simulation -> Int -> Number -> Number -> Number -> Number
-alphabetaMinimizing moves sim depth a b v =
+alphabetaMinimizing :: Fn6 (Array Command) Simulation Int Number Number Number Number
+alphabetaMinimizing = mkFn6 $ \moves sim depth a b v ->
   case Array.uncons moves of
     Just {head = m, tail = ms} ->
       case Simulation.simulate m sim of
         Just nextSim ->
           let
             nextV =
-              min v (alphabeta nextSim (depth - 1) a b)
+              min v (runFn4 alphabeta nextSim (depth - 1) a b)
 
             nextB =
               min b nextV
@@ -145,10 +146,10 @@ alphabetaMinimizing moves sim depth a b v =
             if nextB < a then
               nextV
             else
-              alphabetaMinimizing ms sim depth a nextB nextV
+              runFn6 alphabetaMinimizing ms sim depth a nextB nextV
 
         Nothing ->
-          alphabetaMinimizing ms sim depth a b v
+          runFn6 alphabetaMinimizing ms sim depth a b v
 
     Nothing ->
       v
@@ -164,7 +165,7 @@ playAI sim =
             nextNextSim =
               Simulation.clockTickUntilTurn nextSim
           in
-            Just { cmd : cmd, sim : nextNextSim, score : evaluatePosition nextNextSim 3 }
+            Just { cmd : cmd, sim : nextNextSim, score : evaluatePosition nextNextSim 4 }
 
         Nothing ->
           Nothing
