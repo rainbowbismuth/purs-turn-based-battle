@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 module Simulation where
 
-import Prelude ((++), (&&), ($), (+), (-), show, (*), (>>>), (>), map, (#), (==), (/=), (||))
+import Prelude ((++), (<>), (&&), ($), (+), (-), show, (*), (>>>), (>), map, (#), (==), (/=), (||))
 import Data.Foldable (foldr)
 import Data.Array as Array
 import Data.Maybe (Maybe(..))
@@ -176,18 +176,19 @@ clockTick sim =
 turnOrderArray :: Simulation -> Array Combatant
 turnOrderArray initialSim =
   let
-    recur i sim =
+    recur i sim acc =
       if i > 0 then
         case activeCmbt sim of
           Just cmbt ->
-            Array.cons cmbt $ recur (i - 1) (clockTickUntilTurn (dropActiveTurn sim))
+            acc <> [cmbt]
+              # recur (i - 1) (clockTickUntilTurn (dropActiveTurn sim))
 
           Nothing ->
-            recur (i - 1) (clockTickUntilTurn sim)
+            recur (i - 1) (clockTickUntilTurn sim) acc
       else
-        []
+        acc
   in
-    recur 12 initialSim
+    recur 12 initialSim []
 
 
 combatantById :: Id -> Simulation -> Maybe Combatant
