@@ -161,17 +161,10 @@ playAI :: Simulation -> Simulation
 playAI sim =
   let
     depth = 10 - Array.length (Simulation.combatants sim)
-    explore cmd =
-      case Simulation.simulate cmd sim of
-        Just nextSim ->
-          let
-            nextNextSim =
-              Simulation.clockTickUntilTurn nextSim
-          in
-            Just { cmd : cmd, sim : nextNextSim, score : evaluatePosition nextNextSim depth }
-
-        Nothing ->
-          Nothing
+    explore cmd = do
+      nextSim <- Simulation.simulate cmd sim
+      let nextNextSim = Simulation.clockTickUntilTurn nextSim
+      pure { cmd : cmd, sim : nextNextSim, score : evaluatePosition nextNextSim depth }
 
     head =
       availableMoves sim
