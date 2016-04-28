@@ -19,10 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 module Simulation where
 
-import Prelude ((++), (<>), (&&), ($), (+), (-), show, (*), (>>>), (>), map, (#), (==), (/=), (||))
+import Prelude ((++), (<>), (&&), ($), (+), (-), show, (*), (>>>), (>), map, (#), (==), (/=), (||), pure, bind)
 import Data.Foldable (foldr)
 import Data.Array as Array
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Int (toNumber)
 import Elm.Basics (ceiling)
@@ -91,13 +91,9 @@ findActiveCmbt sim =
 
 
 activeCmbt :: Simulation -> Maybe Combatant
-activeCmbt sim =
-  case sim.activeCombatant of
-    Just id ->
-      Just (combatantByIdMustExist id sim)
-
-    Nothing ->
-      Nothing
+activeCmbt sim = do
+  id <- sim.activeCombatant
+  pure (combatantByIdMustExist id sim)
 
 
 activeCmbtMustExist :: Simulation -> Combatant
@@ -270,13 +266,9 @@ selfReaction user mv =
 simulate :: Command -> Simulation -> Maybe Simulation
 simulate cmd initialSim =
   let
-    tryPay sim mv cmbt =
-      case Combatant.payAP (Move.cost mv) cmbt of
-        Just nextCmbt ->
-          Just $ Tuple nextCmbt (sim { combatants = ourUpdateAt (fromId nextCmbt.id) nextCmbt sim.combatants } )
-
-        Nothing ->
-          Nothing
+    tryPay sim mv cmbt = do
+      nextCmbt <- Combatant.payAP (Move.cost mv) cmbt
+      pure $ Tuple nextCmbt (sim { combatants = ourUpdateAt (fromId nextCmbt.id) nextCmbt sim.combatants })
 
     with sim cmbt =
       case cmd of
@@ -321,22 +313,8 @@ simulate cmd initialSim =
               Just (dropActiveTurn nextSim)
           else
             Nothing
-  in
-    case activeCmbt initialSim of
-      Just cmbt ->
-        let
-          sim =
-            modifyById Combatant.toDefaultState cmbt.id initialSim
-
-          nextCmbt =
-            case activeCmbt sim of
-              Just c ->
-                c
-
-              Nothing ->
-                Debug.crash "should never happen"
-        in
-          with sim nextCmbt
-
-      Nothing ->
-        Nothing
+  in do
+    cmbt <- activeCmbt initialSim
+    let sim = modifyById Combatant.toDefaultState cmbt.id initialSim
+    nextCmbt <- activeCmbt sim
+    with sim nextCmbt
