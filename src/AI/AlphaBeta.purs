@@ -58,19 +58,21 @@ score sim =
 
 targetsForMove :: Simulation -> Move -> Array Command
 targetsForMove sim mv =
-  case Command.typeOfMove mv of
-    SingleTargetType ->
-      sim.combatants
-        # Array.mapMaybe
-            (\target ->
-              if Combatant.alive target then
-                Just (SingleTarget mv target.id)
-              else
-                Nothing
-            )
+  let user = Simulation.activeCmbtMustExist sim
+  in
+    case Command.typeOfMove mv of
+      SingleTargetType ->
+        sim.combatants
+          # Array.mapMaybe
+              (\target ->
+                if Combatant.shouldUseOn user mv target then
+                  Just (SingleTarget mv target.id)
+                else
+                  Nothing
+              )
 
-    SelfTargetType ->
-      [ SelfTarget mv ]
+      SelfTargetType ->
+        [ SelfTarget mv ]
 
 
 availableMoves :: Simulation -> Array Command
@@ -158,6 +160,7 @@ alphabetaMinimizing = mkFn6 $ \moves sim depth a b v ->
 playAI :: Simulation -> Simulation
 playAI sim =
   let
+    depth = 10 - Array.length (Simulation.combatants sim)
     explore cmd =
       case Simulation.simulate cmd sim of
         Just nextSim ->
@@ -165,7 +168,7 @@ playAI sim =
             nextNextSim =
               Simulation.clockTickUntilTurn nextSim
           in
-            Just { cmd : cmd, sim : nextNextSim, score : evaluatePosition nextNextSim 4 }
+            Just { cmd : cmd, sim : nextNextSim, score : evaluatePosition nextNextSim depth }
 
         Nothing ->
           Nothing

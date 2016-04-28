@@ -37,6 +37,7 @@ module Combatant
 , increaseAP
 , payAP
 , payTurnCT
+, shouldUseOn
 , toDefaultState
 , toDefendState) where
 
@@ -46,7 +47,7 @@ import Data.Array (elemIndex)
 import Data.Ord (min)
 import Id (Id(..))
 import Player (Player(..))
-import Move (Move)
+import Move (Move(..))
 import Class (Class(..))
 
 
@@ -196,6 +197,10 @@ toDefaultState :: Combatant -> Combatant
 toDefaultState cmbt =
   cmbt { state = Default }
 
+shouldUseOn :: Combatant -> Move -> Combatant -> Boolean
+shouldUseOn user Attack target = foes user target && alive target
+shouldUseOn user Heal target = friends user target && alive target
+shouldUseOn _ _ _ = false
 
 toDefendState :: Combatant -> Combatant
 toDefendState cmbt =
